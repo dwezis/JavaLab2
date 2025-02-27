@@ -3,185 +3,351 @@ package org.example;
 import java.util.*;
 
 public class MyDeque<T> implements Deque<T>, Iterable<T> {
-    private LinkedList<T> list;
+    private static class Node<T> {
+        T data;
+        Node<T> prev;
+        Node<T> next;
+
+        Node(T data) {
+            this.data = data;
+            this.prev = null;
+            this.next = null;
+        }
+    }
+
+    private Node<T> head;
+    private Node<T> tail;
+    private int size;
 
     public MyDeque() {
-        list = new LinkedList<>();
+        head = null;
+        tail = null;
+        size = 0;
     }
 
     @Override
     public void addFirst(T t) {
-        list.addFirst(t);
+        Node<T> newNode = new Node<>(t);
+        if (head == null) {
+            head = tail = newNode;
+        } else {
+            newNode.next = head;
+            head.prev = newNode;
+            head = newNode;
+        }
+        size++;
     }
 
     @Override
     public void addLast(T t) {
-        list.addLast(t);
+        Node<T> newNode = new Node<>(t);
+        if (tail == null) {
+            head = tail = newNode;
+        } else {
+            newNode.prev = tail;
+            tail.next = newNode;
+            tail = newNode;
+        }
+        size++;
     }
 
     @Override
     public boolean offerFirst(T t) {
-        return list.offerFirst(t);
+        addFirst(t);
+        return true;
     }
 
     @Override
     public boolean offerLast(T t) {
-        return list.offerLast(t);
+        addLast(t);
+        return true;
     }
 
     @Override
     public T removeFirst() {
-        return list.removeFirst();
+        if (head == null) throw new NoSuchElementException();
+        T data = head.data;
+        head = head.next;
+        if (head != null) {
+            head.prev = null;
+        } else {
+            tail = null;
+        }
+        size--;
+        return data;
     }
 
     @Override
     public T removeLast() {
-        return list.removeLast();
+        if (tail == null) throw new NoSuchElementException();
+        T data = tail.data;
+        tail = tail.prev;
+        if (tail != null) {
+            tail.next = null;
+        } else {
+            head = null;
+        }
+        size--;
+        return data;
     }
 
     @Override
     public T pollFirst() {
-        return list.pollFirst();
+        if (head == null) return null;
+        return removeFirst();
     }
 
     @Override
     public T pollLast() {
-        return list.pollLast();
+        if (tail == null) return null;
+        return removeLast();
     }
 
     @Override
     public T getFirst() {
-        return list.getFirst();
+        if (head == null) throw new NoSuchElementException();
+        return head.data;
     }
 
     @Override
     public T getLast() {
-        return list.getLast();
+        if (tail == null) throw new NoSuchElementException();
+        return tail.data;
     }
 
     @Override
     public T peekFirst() {
-        return list.peekFirst();
+        if (head == null) return null;
+        return head.data;
     }
 
     @Override
     public T peekLast() {
-        return list.peekLast();
+        if (tail == null) return null;
+        return tail.data;
     }
 
     @Override
     public boolean removeFirstOccurrence(Object o) {
-        return list.removeFirstOccurrence(o);
+        Node<T> current = head;
+        while (current != null) {
+            if (Objects.equals(current.data, o)) {
+                if (current == head) {
+                    removeFirst();
+                } else if (current == tail) {
+                    removeLast();
+                } else {
+                    current.prev.next = current.next;
+                    current.next.prev = current.prev;
+                    size--;
+                }
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
     }
 
     @Override
     public boolean removeLastOccurrence(Object o) {
-        return list.removeLastOccurrence(o);
+        Node<T> current = tail;
+        while (current != null) {
+            if (Objects.equals(current.data, o)) {
+                if (current == head) {
+                    removeFirst();
+                } else if (current == tail) {
+                    removeLast();
+                } else {
+                    current.prev.next = current.next;
+                    current.next.prev = current.prev;
+                    size--;
+                }
+                return true;
+            }
+            current = current.prev;
+        }
+        return false;
     }
 
     @Override
     public boolean add(T t) {
-        return list.add(t);
+        addLast(t);
+        return true;
     }
 
     @Override
     public boolean offer(T t) {
-        return list.offer(t);
+        return offerLast(t);
     }
 
     @Override
     public T remove() {
-        return list.remove();
+        return removeFirst();
     }
 
     @Override
     public T poll() {
-        return list.poll();
+        return pollFirst();
     }
 
     @Override
     public T element() {
-        return list.element();
+        return getFirst();
     }
 
     @Override
     public T peek() {
-        return list.peek();
+        return peekFirst();
     }
 
     @Override
     public void push(T t) {
-        list.push(t);
+        addFirst(t);
     }
 
     @Override
     public T pop() {
-        return list.pop();
+        return removeFirst();
     }
 
     @Override
     public boolean remove(Object o) {
-        return list.remove(o);
+        return removeFirstOccurrence(o);
     }
 
     @Override
     public boolean contains(Object o) {
-        return list.contains(o);
+        Node<T> current = head;
+        while (current != null) {
+            if (Objects.equals(current.data, o)) {
+                return true;
+            }
+            current = current.next;
+        }
+        return false;
     }
 
     @Override
     public int size() {
-        return list.size();
+        return size;
     }
 
     @Override
     public Iterator<T> iterator() {
-        return list.iterator();
+        return new Iterator<T>() {
+            private Node<T> current = head;
+
+            @Override
+            public boolean hasNext() {
+                return current != null;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) throw new NoSuchElementException();
+                T data = current.data;
+                current = current.next;
+                return data;
+            }
+        };
     }
 
     @Override
     public Iterator<T> descendingIterator() {
-        return list.descendingIterator();
+        return new Iterator<T>() {
+            private Node<T> current = tail;
+
+            @Override
+            public boolean hasNext() {
+                return current != null;
+            }
+
+            @Override
+            public T next() {
+                if (!hasNext()) throw new NoSuchElementException();
+                T data = current.data;
+                current = current.prev;
+                return data;
+            }
+        };
     }
 
     @Override
     public boolean isEmpty() {
-        return list.isEmpty();
+        return size == 0;
     }
 
     @Override
     public Object[] toArray() {
-        return list.toArray();
+        Object[] array = new Object[size];
+        int i = 0;
+        for (T item : this) {
+            array[i++] = item;
+        }
+        return array;
     }
 
     @Override
     public <E> E[] toArray(E[] a) {
-        return list.toArray(a);
+        if (a.length < size) {
+            a = (E[]) java.lang.reflect.Array.newInstance(a.getClass().getComponentType(), size);
+        }
+        int i = 0;
+        for (T item : this) {
+            a[i++] = (E) item;
+        }
+        if (a.length > size) {
+            a[size] = null;
+        }
+        return a;
     }
 
     @Override
     public boolean containsAll(Collection<?> c) {
-        return list.containsAll(c);
+        for (Object o : c) {
+            if (!contains(o)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     @Override
     public boolean addAll(Collection<? extends T> c) {
-        return list.addAll(c);
+        for (T item : c) {
+            addLast(item);
+        }
+        return true;
     }
 
     @Override
     public boolean removeAll(Collection<?> c) {
-        return list.removeAll(c);
+        boolean modified = false;
+        for (Object o : c) {
+            while (remove(o)) {
+                modified = true;
+            }
+        }
+        return modified;
     }
 
     @Override
     public boolean retainAll(Collection<?> c) {
-        return list.retainAll(c);
+        boolean modified = false;
+        Iterator<T> it = iterator();
+        while (it.hasNext()) {
+            if (!c.contains(it.next())) {
+                it.remove();
+                modified = true;
+            }
+        }
+        return modified;
     }
 
     @Override
     public void clear() {
-        list.clear();
+        head = tail = null;
+        size = 0;
     }
 
     // Метод main для запуска
